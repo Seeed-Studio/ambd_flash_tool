@@ -8,6 +8,39 @@ import re
 from colorama import init, Fore, Back, Style
 from pathlib import Path
 
+if os.name == 'nt':  # sys.platform == 'win32':
+    from serial.tools.list_ports_windows import comports
+elif os.name == 'posix':
+    from serial.tools.list_ports_posix import comports
+#~ elif os.name == 'java':
+else:
+    raise ImportError("Sorry: no implementation for your platform ('{}') available".format(os.name))
+
+# List of supported board USB IDs.  Each board is a tuple of unique USB vendor
+# ID, USB product ID.
+BOARD_IDS = \
+    [{
+        "name": "wio terminal",
+        "info": ("2886", "802D")
+    }]
+
+def getAllPortInfo():
+    return comports(include_links=False)
+    
+def getAvailableBoard():
+    for info in getAllPortInfo():
+        port, desc, hwid = info 
+        ii = hwid.find("VID:PID")
+        #hwid: USB VID:PID=2886:002D SER=4D68990C5337433838202020FF123244 LOCATION=7-3.1.3:1.
+        if ii != -1:
+            for b in  BOARD_IDS:
+                (vid, pid) = b["info"]
+                if vid == hwid[ii + 8: ii + 8 + 4] and pid == hwid[ii + 8 + 5 :ii + 8 + 5 + 4 ]:
+                    return port
+
+    return None
+
+
 
 def windows_full_port_name(portname):
     # Helper function to generate proper Windows COM port paths.  Apparently
@@ -109,14 +142,20 @@ def cli():
 @click.option(
     "--port",
     "-p",
-    required=True,
+    required=False,
     type=click.STRING,
     help="Name of serial port for connected board.",
     metavar="PORT",
 )
 def erase(length, port):
+    getAvailableBoard()
     _tool = get_flash_tool()
     _port = normalized_port(port)
+    if _port == None:
+        _port = getAvailableBoard()
+        if _port == None:
+            print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+            exit(0)
     _cmd = _tool + " " + _port 
     make_empty_img(length)
     print(Fore.GREEN + "Erasing...")
@@ -132,7 +171,7 @@ def erase(length, port):
 @click.option(
     "--port",
     "-p",
-    required=True,
+    required=False,
     type=click.STRING,
     help="Name of serial port for connected board.",
     metavar="PORT",
@@ -149,7 +188,14 @@ def flash(port, dir):
     copy_img(dir)
     _tool = get_flash_tool()
     _port = normalized_port(port)
+    _port = normalized_port(port)
+    if _port == None:
+        _port = getAvailableBoard()
+        if _port == None:
+            print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+            exit(0)
     _cmd = _tool + " " + _port 
+    
     print(Fore.GREEN + "Flashing...")
     obj = os.popen(_cmd)
     ret = obj.read()
@@ -158,8 +204,6 @@ def flash(port, dir):
         print(Fore.RED + "Error!")
     else:
         print(Fore.GREEN + "Success!")
-
-
 
 if __name__ == "__main__":
     cli()
