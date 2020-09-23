@@ -69,7 +69,7 @@ def get_flash_tool():
         _tool = str(Path(_tool, 'windows', "amebad_image_tool.exe"))
     elif _platform.find('Linux') >= 0:
         _tool = str(Path(_tool, 'linux', 'amebad_image_tool'))
-    elif _platform.find('Drawin') >= 0:
+    elif _platform.find('Darwin') >= 0:
          _tool = str(Path(_tool, 'macos', 'amebad_image_tool'))
     else:
         _tool = ""
