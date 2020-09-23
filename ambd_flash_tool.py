@@ -164,7 +164,7 @@ def copy_img(dir):
     
     
 @click.group()
-@click.version_option(version='0.1.1')
+@click.version_option(version='0.2.0')
 def cli():
     """RTL872XD Flash tool
 
