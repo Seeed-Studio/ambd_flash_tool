@@ -1,18 +1,61 @@
+
+
+
 import os
 import sys
-import click
 import platform
 import shutil
 import struct
 import re
-from colorama import init, Fore, Back, Style
+
+try:
+    import pathlib
+except ImportError:
+    print("Installing pathlib module")
+    res = os.system("pip3 install pathlib")
+    if res != 0:
+        print("pathlib module installation failed")
+        sys.exit(1)
+    import pathlib
+
 from pathlib import Path
+
+try:
+    import click
+except ImportError:
+    print("Installing Click module")
+    res = os.system("pip3 install Click")
+    if res != 0:
+        print("Click module installation failed")
+        sys.exit(1)
+    import click
+
+try:
+    import colorama
+except ImportError:
+    print("Installing colorama module")
+    res = os.system("pip3 install colorama")
+    if res != 0:
+        print("Colorama module installation failed")
+        sys.exit(1)
+    import colorama
+
+from colorama import init, Fore, Back, Style
+
+try:
+    import serial
+except ImportError:
+    print("Installing pyserial module")
+    res = os.system("pip3 install pyserial")
+    if res != 0:
+        print("pyserial module installation failed")
+        sys.exit(1)
+    import serial
 
 if os.name == 'nt':  # sys.platform == 'win32':
     from serial.tools.list_ports_windows import comports
 elif os.name == 'posix':
     from serial.tools.list_ports_posix import comports
-#~ elif os.name == 'java':
 else:
     raise ImportError("Sorry: no implementation for your platform ('{}') available".format(os.name))
 
@@ -106,13 +149,13 @@ def copy_img(dir):
     _km0_km4_image2_bin = str(Path(dir, "km0_km4_image2.bin"))
     if not os.path.exists(_km0_boot_all_bin):
         print(Fore.RED + _km0_boot_all_bin + " not exists!")
-        sys.exit(0)
+        sys.exit(1)
     if not os.path.exists(_km4_boot_all_bin):
         print(Fore.RED + _km4_boot_all_bin + " not exists!")
-        sys.exit(0)
+        sys.exit(1)
     if not os.path.exists(_km0_km4_image2_bin):
         print(Fore.RED + _km0_km4_image2_bin + " not exists!")
-        sys.exit(0)
+        sys.exit(1)
     print(Fore.GREEN + "copy img to workspace...")
     shutil.copyfile(_km0_boot_all_bin, str(Path(_local_dir, "km0_boot_all.bin")))
     shutil.copyfile(_km4_boot_all_bin, str(Path(_local_dir, "km4_boot_all.bin")))
@@ -155,7 +198,7 @@ def erase(length, port):
         _port = getAvailableBoard()
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
-            exit(0)
+            sys.exit(1)
     _cmd = _tool + " " + _port 
     make_empty_img(length)
     print(Fore.GREEN + "Erasing...")
@@ -193,7 +236,7 @@ def flash(port, dir):
         _port = getAvailableBoard()
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
-            exit(0)
+            sys.exit(1)
     _cmd = _tool + " " + _port 
     
     print(Fore.GREEN + "Flashing...")
@@ -206,5 +249,8 @@ def flash(port, dir):
         print(Fore.GREEN + "Success!")
 
 if __name__ == "__main__":
-    cli()
+    try:
+        cli()
+    except OSError:
+        print("error")
    
