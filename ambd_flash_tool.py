@@ -195,22 +195,24 @@ def cli():
 def erase(length, port):
     getAvailableBoard()
     _tool = get_flash_tool()
-    _port = normalized_port(port)
-    if _port == None:
+   
+    if port == None:
         _port = getAvailableBoard()
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
             sys.exit(1)
+            
+    _port = normalized_port(_port)
     _cmd = _tool + " " + _port 
     make_empty_img(length)
     print(Fore.GREEN + "Erasing...")
     obj = os.popen(_cmd)
     ret = obj.read()
-    if ret.find('error') >= 0:
+    if ret.find('successfully') >= 0:
         print(ret)
-        print(Fore.RED + "Error!")
-    else:
         print(Fore.GREEN + "Success!")
+    else:
+        print(Fore.RED + "Error!")
 
 @cli.command()
 @click.option(
@@ -224,31 +226,35 @@ def erase(length, port):
 @click.option(
     "--dir",
     "-d",
-    required=True,
+    required=False,
     type=click.STRING,
     help="Specifies the location of the directory where the firmware is located",
     metavar="DIR",
 )
 def flash(port, dir):
-    copy_img(dir)
+    if dir == None:
+        dir = os.getcwd()
+    else:
+        copy_img(dir)
+
     _tool = get_flash_tool()
-    _port = normalized_port(port)
-    _port = normalized_port(port)
-    if _port == None:
+    
+    if port == None:
         _port = getAvailableBoard()
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
             sys.exit(1)
     _cmd = _tool + " " + _port 
     
+    _port = normalized_port(_port)
     print(Fore.GREEN + "Flashing...")
     obj = os.popen(_cmd)
     ret = obj.read()
-    if ret.find('error') >= 0:
+    if ret.find('successfully') >= 0:
         print(ret)
-        print(Fore.RED + "Error!")
-    else:
         print(Fore.GREEN + "Success!")
+    else:
+        print(Fore.RED + "Error!")
 
 if __name__ == "__main__":
     try:
