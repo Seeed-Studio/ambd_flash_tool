@@ -113,11 +113,13 @@ def get_flash_tool():
     elif _platform.find('Linux') >= 0:
         _tool = str(Path(_tool, 'linux', 'amebad_image_tool'))
     elif _platform.find('Darwin') >= 0:
-         _tool = str(Path(_tool, 'macos', 'amebad_image_tool'))
+        _tool = str(Path(_tool, 'macos', 'amebad_image_tool'))
+    elif _platform.find('macOS') >= 0:
+        _tool = str(Path(_tool, 'macos', 'amebad_image_tool'))
     else:
         _tool = ""
         print(Fore.RED, "No support yet!")
-        exit(0)
+        sys.exit(1)
     return _tool
 
 def make_empty_img(length):
