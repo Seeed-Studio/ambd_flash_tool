@@ -1,6 +1,3 @@
-
-
-
 import os
 import sys
 import platform
@@ -23,10 +20,10 @@ from pathlib import Path
 try:
     import click
 except ImportError:
-    print("Installing Click module")
-    res = os.system("pip3 install Click")
+    print("Installing click module")
+    res = os.system("pip3 install click")
     if res != 0:
-        print("Click module installation failed")
+        print("click module installation failed")
         sys.exit(1)
     import click
 
@@ -164,9 +161,8 @@ def copy_img(dir):
     shutil.copyfile(_km0_km4_image2_bin, str(Path(_local_dir, "km0_km4_image2.bin")))
 
     
-    
 @click.group()
-@click.version_option(version='0.2.0')
+@click.version_option(version='0.3.0')
 def cli():
     """RTL872XD Flash tool
 
@@ -208,8 +204,8 @@ def erase(length, port):
     print(Fore.GREEN + "Erasing...")
     obj = os.popen(_cmd)
     ret = obj.read()
+    print(ret)
     if ret.find('successfully') >= 0:
-        print(ret)
         print(Fore.GREEN + "Success!")
     else:
         print(Fore.RED + "Error!")
@@ -250,8 +246,8 @@ def flash(port, dir):
     print(Fore.GREEN + "Flashing...")
     obj = os.popen(_cmd)
     ret = obj.read()
+    print(ret)
     if ret.find('successfully') >= 0:
-        print(ret)
         print(Fore.GREEN + "Success!")
     else:
         print(Fore.RED + "Error!")
