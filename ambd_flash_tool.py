@@ -162,7 +162,7 @@ def copy_img(dir):
 
     
 @click.group()
-@click.version_option(version='0.3.0')
+@click.version_option(version='0.4.0')
 def cli():
     """RTL872XD Flash tool
 
@@ -229,9 +229,9 @@ def erase(length, port):
 )
 def flash(port, dir):
     if dir == None:
-        dir = os.getcwd()
-    else:
-        copy_img(dir)
+        dir = str(Path(os.getcwd(), 'firmware'))
+  
+    copy_img(dir)
 
     _tool = get_flash_tool()
     
