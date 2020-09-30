@@ -162,7 +162,7 @@ def copy_img(dir):
 
     
 @click.group()
-@click.version_option(version='0.4.0')
+@click.version_option(version='0.5.0')
 def cli():
     """RTL872XD Flash tool
 
@@ -197,6 +197,8 @@ def erase(length, port):
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
             sys.exit(1)
+    else:
+        _port = port
             
     _port = normalized_port(_port)
     _cmd = _tool + " " + _port 
@@ -240,6 +242,8 @@ def flash(port, dir):
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
             sys.exit(1)
+    else:
+        _port = port
     _cmd = _tool + " " + _port 
     
     _port = normalized_port(_port)
