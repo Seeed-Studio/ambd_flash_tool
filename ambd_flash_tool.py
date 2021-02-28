@@ -4,6 +4,7 @@ import platform
 import shutil
 import struct
 import re
+import time
 
 try:
     import pathlib
@@ -61,7 +62,13 @@ else:
 BOARD_IDS = \
     [{
         "name": "wio terminal",
-        "info": ("2886", "802D")
+        "info": ("2886", "802D"),
+        "isbootloader": False
+    },
+    {
+        "name": "wio terminal",
+        "info": ("2886", "002D"),
+        "isbootloader": True
     }]
 
 def getAllPortInfo():
@@ -76,11 +83,12 @@ def getAvailableBoard():
             for b in  BOARD_IDS:
                 (vid, pid) = b["info"]
                 if vid == hwid[ii + 8: ii + 8 + 4] and pid == hwid[ii + 8 + 5 :ii + 8 + 5 + 4 ]:
-                    return port
+                    if b["isbootloader"] == True :
+                        return port, True
+                    else:
+                        return port, False
 
-    return None
-
-
+    return None, False
 
 def windows_full_port_name(portname):
     # Helper function to generate proper Windows COM port paths.  Apparently
@@ -102,6 +110,25 @@ def normalized_port(portname):
 
     return _portname
 
+def stty(port):
+    
+    if port == None:
+        _port, _isbootloader = getAvailableBoard()
+        if _port == None:
+            print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+            sys.exit(1)
+    else:
+        _port = port
+            
+    _port = normalized_port(_port)
+
+    if os.name == "posix":
+        if platform.uname().system == "Darwin":
+            return "stty -f " + _port + " %d"
+        return "stty -F " + _port + " %d"
+    elif os.name == "nt":
+        return "MODE " + _port + ":BAUD=%d PARITY=N DATA=8"
+
 def get_flash_tool():
     _tool = str(Path(os.path.split(os.path.realpath(__file__))[0], 'tool'))
     _platform = platform.platform()
@@ -118,6 +145,24 @@ def get_flash_tool():
         print(Fore.RED, "No support yet!")
         sys.exit(1)
     return _tool
+
+def get_bossac_tool():
+    _tool = str(Path(os.path.split(os.path.realpath(__file__))[0], 'tool'))
+    _platform = platform.platform()
+    if _platform.find('Windows') >= 0:
+        _tool = str(Path(_tool, 'windows', "bossac.exe"))
+    elif _platform.find('Linux') >= 0:
+        _tool = str(Path(_tool, 'linux', 'bossac'))
+    elif _platform.find('Darwin') >= 0:
+        _tool = str(Path(_tool, 'macos', 'bossac'))
+    elif _platform.find('macOS') >= 0:
+        _tool = str(Path(_tool, 'macos', 'bossac'))
+    else:
+        _tool = ""
+        print(Fore.RED, "No support yet!")
+        sys.exit(1)
+    return _tool
+
 
 def make_empty_img(length):
     _empty = struct.pack('B', 0xFF)
@@ -162,7 +207,7 @@ def copy_img(dir):
 
     
 @click.group()
-@click.version_option(version='0.5.0')
+@click.version_option(version='0.6.0')
 def cli():
     """RTL872XD Flash tool
 
@@ -189,21 +234,40 @@ def cli():
     metavar="PORT",
 )
 def erase(length, port):
-    getAvailableBoard()
-    _tool = get_flash_tool()
-   
     if port == None:
-        _port = getAvailableBoard()
+        _port, _isbootloader = getAvailableBoard()
         if _port == None:
             print(Fore.RED + "Sorry, the device you should have is not plugged in.")
             sys.exit(1)
     else:
         _port = port
-            
+
     _port = normalized_port(_port)
-    _cmd = _tool + " " + _port 
+    
+    if _isbootloader == False:
+        os.system(stty(_port) % 1200)
+        time.sleep(2)
+    _port, _isbootloader = getAvailableBoard()
+    if _isbootloader == True:
+        _tool = get_bossac_tool()
+        _port = normalized_port(_port)
+        _cmd = _tool + " -i -d --port=" + _port + " -U -i --offset=0x4000 -w -v " + str(Path(os.getcwd(), 'firmware')) + "/WioTerminal_USB2Serial_Burn8720.ino.bin -R" 
+        os.system(_cmd)
+    time.sleep(10)
+    _port, _isbootloader = getAvailableBoard()
+    if _port == None:
+        print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+        sys.exit(1)
+
     make_empty_img(length)
-    print(Fore.GREEN + "Erasing...")
+
+    _tool = get_flash_tool()
+
+    _port = normalized_port(_port)
+    
+    _cmd = _tool + " " + _port 
+
+    print(Fore.GREEN + "Flashing...")
     obj = os.popen(_cmd)
     ret = obj.read()
     print(ret)
@@ -230,23 +294,42 @@ def erase(length, port):
     metavar="DIR",
 )
 def flash(port, dir):
+    if port == None:
+        _port, _isbootloader = getAvailableBoard()
+        if _port == None:
+            print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+            sys.exit(1)
+    else:
+        _port = port
+
+    _port = normalized_port(_port)
+    
+    if _isbootloader == False:
+        os.system(stty(_port) % 1200)
+        time.sleep(2)
+    _port, _isbootloader = getAvailableBoard()
+    if _isbootloader == True:
+        _tool = get_bossac_tool()
+        _port = normalized_port(_port)
+        _cmd = _tool + " -i -d --port=" + _port + " -U -i --offset=0x4000 -w -v " + str(Path(os.getcwd(), 'firmware')) + "/WioTerminal_USB2Serial_Burn8720.ino.bin -R" 
+        os.system(_cmd)
+    time.sleep(10)
+    _port, _isbootloader = getAvailableBoard()
+    if _port == None:
+        print(Fore.RED + "Sorry, the device you should have is not plugged in.")
+        sys.exit(1)
+
     if dir == None:
         dir = str(Path(os.getcwd(), 'firmware'))
   
     copy_img(dir)
 
     _tool = get_flash_tool()
-    
-    if port == None:
-        _port = getAvailableBoard()
-        if _port == None:
-            print(Fore.RED + "Sorry, the device you should have is not plugged in.")
-            sys.exit(1)
-    else:
-        _port = port
-    _cmd = _tool + " " + _port 
-    
+
     _port = normalized_port(_port)
+    
+    _cmd = _tool + " " + _port 
+
     print(Fore.GREEN + "Flashing...")
     obj = os.popen(_cmd)
     ret = obj.read()
