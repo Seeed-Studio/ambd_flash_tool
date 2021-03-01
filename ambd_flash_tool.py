@@ -87,28 +87,7 @@ def getAvailableBoard():
                         return port, True
                     else:
                         return port, False
-
     return None, False
-
-def windows_full_port_name(portname):
-    # Helper function to generate proper Windows COM port paths.  Apparently
-    # Windows requires COM ports above 9 to have a special path, where ports below
-    # 9 are just referred to by COM1, COM2, etc. (wacky!)  See this post for
-    # more info and where this code came from:
-    # http://eli.thegreenplace.net/2009/07/31/listing-all-serial-ports-on-windows-with-python/
-    m = re.match("^COM(\d+)$", portname)
-    if m and int(m.group(1)) < 10:
-        return portname
-    else:
-        return "\\\\.\\{0}".format(portname)
-
-def normalized_port(portname):
-    _portname = portname
-    _platform = platform.platform()
-    if _platform.find('Windows') >= 0:
-        _portname = windows_full_port_name(portname)
-
-    return _portname
 
 def stty(port):
     
@@ -119,8 +98,6 @@ def stty(port):
             sys.exit(1)
     else:
         _port = port
-            
-    _port = normalized_port(_port)
 
     if os.name == "posix":
         if platform.uname().system == "Darwin":
@@ -128,6 +105,8 @@ def stty(port):
         return "stty -F " + _port + " %d"
     elif os.name == "nt":
         return "MODE " + _port + ":BAUD=%d PARITY=N DATA=8"
+    
+    return "echo not support"
 
 def get_flash_tool():
     _tool = str(Path(os.path.split(os.path.realpath(__file__))[0], 'tool'))
@@ -241,19 +220,23 @@ def erase(length, port):
             sys.exit(1)
     else:
         _port = port
-
-    _port = normalized_port(_port)
     
     if _isbootloader == False:
-        os.system(stty(_port) % 1200)
+        _cmd = stty(_port)
+        print(_cmd)
+        if _cmd != "echo not support":
+            os.system(_cmd%1200)
         time.sleep(2)
     _port, _isbootloader = getAvailableBoard()
     if _isbootloader == True:
         _tool = get_bossac_tool()
-        _port = normalized_port(_port)
         _cmd = _tool + " -i -d --port=" + _port + " -U -i --offset=0x4000 -w -v " + str(Path(os.getcwd(), 'firmware')) + "/WioTerminal_USB2Serial_Burn8720.ino.bin -R" 
         os.system(_cmd)
-    time.sleep(10)
+   
+    for i in range(0, 3):
+        print(Fore.GREEN + "wait...")
+        time.sleep(1)
+
     _port, _isbootloader = getAvailableBoard()
     if _port == None:
         print(Fore.RED + "Sorry, the device you should have is not plugged in.")
@@ -262,8 +245,6 @@ def erase(length, port):
     make_empty_img(length)
 
     _tool = get_flash_tool()
-
-    _port = normalized_port(_port)
     
     _cmd = _tool + " " + _port 
 
@@ -302,19 +283,26 @@ def flash(port, dir):
     else:
         _port = port
 
-    _port = normalized_port(_port)
+    print(_port)
     
     if _isbootloader == False:
-        os.system(stty(_port) % 1200)
+        _cmd = stty(_port)
+        print(_cmd)
+        if _cmd != "echo not support":
+            os.system(_cmd%1200)
         time.sleep(2)
     _port, _isbootloader = getAvailableBoard()
     if _isbootloader == True:
         _tool = get_bossac_tool()
-        _port = normalized_port(_port)
         _cmd = _tool + " -i -d --port=" + _port + " -U -i --offset=0x4000 -w -v " + str(Path(os.getcwd(), 'firmware')) + "/WioTerminal_USB2Serial_Burn8720.ino.bin -R" 
         os.system(_cmd)
-    time.sleep(10)
+
+    for i in range(0, 3):
+        print(Fore.GREEN + "wait...")
+        time.sleep(1)
+
     _port, _isbootloader = getAvailableBoard()
+
     if _port == None:
         print(Fore.RED + "Sorry, the device you should have is not plugged in.")
         sys.exit(1)
@@ -325,8 +313,6 @@ def flash(port, dir):
     copy_img(dir)
 
     _tool = get_flash_tool()
-
-    _port = normalized_port(_port)
     
     _cmd = _tool + " " + _port 
 
